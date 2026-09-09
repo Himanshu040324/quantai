@@ -6,8 +6,18 @@
 // from this file — never reach into internal/user.model.js directly.
 // This is the boundary rule from Master_Prompt.md section 3.
 
+const express = require('express');
 const { User, RISK_LABELS } = require('./internal/user.model');
 const { labelToLambda, RISK_LAMBDA_MAP } = require('./internal/riskMapping');
+const { getProfile, putProfile } = require('./internal/profileController');
+// Cross-module import of auth is allowed here because it's the
+// public contract (auth/index.js), not an internal file — consistent
+// with the boundary rule.
+const { requireAuth } = require('../auth');
+
+const router = express.Router();
+router.get('/profile', requireAuth, getProfile);
+router.put('/profile', requireAuth, putProfile);
 
 /**
  * Create a new user document. Expects passwordHash to already be
@@ -68,6 +78,7 @@ async function incrementRefreshTokenVersion(userId) {
 }
 
 module.exports = {
+  router,
   // model export is intentional here so Mongoose can register it and
   // so ownership-check code elsewhere can type against it — but reads
   // and writes should go through the functions above wherever possible.
