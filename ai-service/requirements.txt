@@ -3,3 +3,8 @@ uvicorn
 pandas
 numpy
 yfinance
+motor
+pydantic-settings
+python-dotenv
+httpx
+tenacity
