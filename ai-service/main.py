@@ -12,6 +12,8 @@ from modules.market_data.internal.cache_repository import ensure_indexes as ensu
 from modules.market_data.internal.fundamentals_repository import (
     ensure_indexes as ensure_fundamentals_indexes,
 )
+from modules.news import router as news_router
+from modules.news.internal.cache_repository import ensure_indexes as ensure_news_indexes
 from shared.db.connection import close_mongo_connection, connect_to_mongo, get_database
 
 
@@ -21,6 +23,7 @@ async def lifespan(app: FastAPI):
     db = get_database()
     await ensure_ohlcv_indexes(db)
     await ensure_fundamentals_indexes(db)
+    await ensure_news_indexes(db)
     yield
     await close_mongo_connection()
 
@@ -28,6 +31,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="QuantAI AI Service", lifespan=lifespan)
 
 app.include_router(market_data_router)
+app.include_router(news_router)
 
 
 @app.get("/health")

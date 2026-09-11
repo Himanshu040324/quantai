@@ -1,5 +1,8 @@
 """
 Public contract for the news module.
-Scaffolded in Step 1; real router (headline fetching, NewsAPI/RSS,
-caching) lands in Step 5. Not yet imported into main.py.
+Other modules and main.py should import ONLY from here — never reach
+into modules.news.internal.* directly.
 """
+from modules.news.internal.router import router
+
+__all__ = ["router"]
