@@ -1,1 +1,4 @@
 documentation/
+
+How to start the project
+-> ai-service  -> uvicorn main:app --reload --port 8000
