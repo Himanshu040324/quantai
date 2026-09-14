@@ -1,5 +1,5 @@
 // backend/src/shared/env.js
-// NEW FILE
+// REPLACING EXISTING FILE
 //
 // Centralized, validated environment access. Import from here instead
 // of calling process.env directly, so a missing required var fails
@@ -29,6 +29,11 @@ const env = {
   REFRESH_TOKEN_TTL_MS: 30 * 24 * 60 * 60 * 1000, // 30 days, for cookie maxAge
 
   CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:5173',
+
+  // Not required() — has a sane local-dev default so Phase 2 work
+  // doesn't force an .env edit just to boot the server. Set explicitly
+  // in production/staging .env files where ai-service runs elsewhere.
+  FASTAPI_BASE_URL: process.env.FASTAPI_BASE_URL || 'http://localhost:8000',
 };
 
 module.exports = env;

@@ -1,19 +1,8 @@
 // frontend/src/modules/portfolio/DashboardPage.jsx
-// NEW FILE
+// REPLACING EXISTING FILE
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { useAuth } from '../auth/authContext'
-
-// Dummy data only to confirm the charting pipeline renders end-to-end,
-// per Phase 1's exit criteria. Phase 2 replaces this with real cached
-// price history from the FastAPI data pipeline.
-const DUMMY_CHART_DATA = [
-  { date: 'Mon', value: 100000 },
-  { date: 'Tue', value: 100850 },
-  { date: 'Wed', value: 99420 },
-  { date: 'Thu', value: 101200 },
-  { date: 'Fri', value: 102750 },
-];
+import { useAuth } from '../auth/authContext';
+import PriceChart from './PriceChart';
 
 const RISK_LABEL_DISPLAY = {
   conservative: 'Conservative',
@@ -74,34 +63,7 @@ export default function DashboardPage() {
           />
         </div>
 
-        <div className="rounded-lg border border-border bg-surface p-4">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-medium text-text-main">Portfolio Value</h2>
-            <span className="rounded-full bg-math/20 px-2 py-0.5 text-xs font-medium text-math">
-              Placeholder data
-            </span>
-          </div>
-          <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={DUMMY_CHART_DATA}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-              <XAxis dataKey="date" stroke="#94a3b8" fontSize={12} />
-              <YAxis stroke="#94a3b8" fontSize={12} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#1e293b',
-                  border: '1px solid #334155',
-                  borderRadius: '6px',
-                  color: '#f8fafc',
-                }}
-              />
-              <Line type="monotone" dataKey="value" stroke="#2e74b5" strokeWidth={2} dot={{ r: 3 }} />
-            </LineChart>
-          </ResponsiveContainer>
-          <p className="mt-2 text-xs text-text-muted">
-            This chart uses placeholder data to confirm the charting pipeline works. Phase 2 wires in
-            real cached price history.
-          </p>
-        </div>
+        <PriceChart />
       </div>
     </div>
   );
