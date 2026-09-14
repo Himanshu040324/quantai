@@ -14,6 +14,7 @@ from modules.market_data.internal.fundamentals_repository import (
 )
 from modules.news import router as news_router
 from modules.news.internal.cache_repository import ensure_indexes as ensure_news_indexes
+from modules.optimization import router as optimization_router
 from shared.db.connection import close_mongo_connection, connect_to_mongo, get_database
 
 
@@ -32,6 +33,7 @@ app = FastAPI(title="QuantAI AI Service", lifespan=lifespan)
 
 app.include_router(market_data_router)
 app.include_router(news_router)
+app.include_router(optimization_router)
 
 
 @app.get("/health")

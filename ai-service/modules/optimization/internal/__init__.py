@@ -1,0 +1,1 @@
+"""Internal package marker — nothing outside optimization/ should import from here directly."""
