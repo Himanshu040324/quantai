@@ -1,13 +1,18 @@
 """
 FastAPI routes for the optimization module.
-Step 1: a single diagnostic GET endpoint to verify the covariance
-pipeline independently before /optimize (Step 2) exists.
+- GET  /optimize/covariance: Step 1 diagnostic, unchanged.
+- POST /optimize: Step 2's real Markowitz endpoint.
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from modules.optimization.internal.schemas import CovarianceMatrixResponse
-from modules.optimization.internal.service import compute_covariance_matrix
+from modules.optimization.internal.schemas import (
+    CovarianceMatrixResponse,
+    OptimizeRequest,
+    OptimizeResponse,
+)
+from modules.optimization.internal.service import compute_covariance_matrix, compute_optimal_allocation
+from modules.optimization.internal.solver import OptimizationError
 from shared.db.connection import get_database
 
 router = APIRouter(prefix="/optimize", tags=["optimization"])
@@ -19,3 +24,16 @@ async def get_covariance_matrix(
     db: AsyncIOMotorDatabase = Depends(get_database),
 ) -> CovarianceMatrixResponse:
     return await compute_covariance_matrix(db, years=years)
+
+
+@router.post("", response_model=OptimizeResponse)
+async def optimize_portfolio(
+    request: OptimizeRequest,
+    db: AsyncIOMotorDatabase = Depends(get_database),
+) -> OptimizeResponse:
+    try:
+        return await compute_optimal_allocation(db, request.risk_lambda, request.years)
+    except OptimizationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
