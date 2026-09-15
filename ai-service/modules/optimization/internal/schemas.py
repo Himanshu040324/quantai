@@ -13,11 +13,8 @@ class CovarianceMatrixResponse(BaseModel):
     """
 
     tickers: list[str]
-    # annualized covariance matrix, tickers[i] x tickers[j], row-major
     covariance: list[list[float]]
-    # annualized mean log return per ticker, same order as `tickers`
     mean_returns: list[float]
-    # trading-day count actually used per ticker after alignment
     observation_count: int
     excluded_tickers: list[str]
 
@@ -48,8 +45,20 @@ class OptimizeResponse(BaseModel):
     excluded_tickers: list[str]
 
 
-class UniverseFetchResult(BaseModel):
-    ticker: str
-    status: str
-    bar_count: int
-    error: str | None = None
+class FrontierPoint(BaseModel):
+    target_return: float
+    expected_variance: float
+    allocations: list[AssetAllocation]
+
+
+class FrontierRequest(BaseModel):
+    risk_lambda: float = Field(gt=0, description="Used to compute the recommended point on the frontier")
+    years: int = Field(default=5, gt=0)
+    num_points: int = Field(default=25, ge=5, le=100)
+
+
+class FrontierResponse(BaseModel):
+    tickers: list[str]
+    frontier: list[FrontierPoint]
+    recommended: OptimizeResponse
+    excluded_tickers: list[str]
