@@ -1,7 +1,8 @@
 """
 Pure linear algebra: aligned log-return series in, annualized mean
-return vector + covariance matrix out. No CVXPY, no I/O, no Mongo —
-Step 2's optimizer consumes this output, it doesn't compute it.
+return vector + covariance matrix out (or, for CVaR, the raw scenario
+matrix itself). No CVXPY, no I/O, no Mongo — solver.py/cvar_solver.py
+consume this output, they don't compute it.
 """
 import numpy as np
 import pandas as pd
@@ -47,3 +48,17 @@ def compute_annualized_stats(aligned_returns: pd.DataFrame) -> tuple[np.ndarray,
     annualized_cov = daily_cov * TRADING_DAYS_PER_YEAR
 
     return annualized_mean, annualized_cov
+
+
+def to_scenario_matrix(aligned_returns: pd.DataFrame) -> np.ndarray:
+    """
+    Raw daily log returns as a T x N NumPy array (T scenarios/days, N
+    assets), in the same column order as aligned_returns.columns.
+    Used directly by cvar_solver.py — CVaR's LP formulation needs the
+    actual scenarios, not summary statistics.
+
+    Deliberately NOT annualized — CVaR operates on the empirical daily
+    return distribution directly; annualizing would distort the tail
+    shape the LP is built to capture.
+    """
+    return aligned_returns.to_numpy()

@@ -3,12 +3,15 @@ FastAPI routes for the optimization module.
 - GET  /optimize/covariance: Step 1 diagnostic.
 - POST /optimize: Step 2's single-point Markowitz endpoint.
 - POST /optimize/frontier: Step 3's Efficient Frontier sweep.
+- POST /optimize/cvar: Step 4's CVaR strategy.
 """
 from fastapi import APIRouter, Depends, HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from modules.optimization.internal.schemas import (
     CovarianceMatrixResponse,
+    CvarRequest,
+    CvarResponse,
     FrontierRequest,
     FrontierResponse,
     OptimizeRequest,
@@ -16,6 +19,7 @@ from modules.optimization.internal.schemas import (
 )
 from modules.optimization.internal.service import (
     compute_covariance_matrix,
+    compute_cvar_allocation,
     compute_efficient_frontier,
     compute_optimal_allocation,
 )
@@ -55,6 +59,19 @@ async def get_efficient_frontier(
         return await compute_efficient_frontier(
             db, request.risk_lambda, request.years, request.num_points
         )
+    except OptimizationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@router.post("/cvar", response_model=CvarResponse)
+async def optimize_cvar(
+    request: CvarRequest,
+    db: AsyncIOMotorDatabase = Depends(get_database),
+) -> CvarResponse:
+    try:
+        return await compute_cvar_allocation(db, request.risk_lambda, request.years)
     except OptimizationError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except ValueError as exc:

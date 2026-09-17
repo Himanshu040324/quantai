@@ -2,7 +2,8 @@
 Orchestration layer: pulls cached OHLCV bars for the ticker universe
 via market_data's public contract (never its internal/), converts
 each to a log-return series, aligns them, computes the annualized
-covariance matrix, and runs the CVXPY solver / frontier sweep against it.
+covariance matrix / raw scenario matrix, and runs the CVXPY solvers
+(Markowitz, frontier sweep, CVaR) against it.
 
 Mirrors market_data/internal/service.py's role — router.py stays a
 thin HTTP layer, this is where the actual pipeline logic lives.
@@ -12,12 +13,19 @@ import logging
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from modules.market_data import TICKER_UNIVERSE, get_ohlcv_cached
-from modules.optimization.internal.covariance import align_returns, compute_annualized_stats
+from modules.optimization.internal.constants import CVAR_CONFIDENCE_LEVEL
+from modules.optimization.internal.covariance import (
+    align_returns,
+    compute_annualized_stats,
+    to_scenario_matrix,
+)
+from modules.optimization.internal.cvar_solver import solve_min_cvar
 from modules.optimization.internal.frontier import compute_frontier
 from modules.optimization.internal.returns import bars_to_price_series, price_series_to_log_returns
 from modules.optimization.internal.schemas import (
     AssetAllocation,
     CovarianceMatrixResponse,
+    CvarResponse,
     FrontierPoint,
     FrontierResponse,
     OptimizeResponse,
@@ -137,5 +145,44 @@ async def compute_efficient_frontier(
         tickers=included_tickers,
         frontier=frontier_points,
         recommended=recommended,
+        excluded_tickers=excluded,
+    )
+
+
+async def compute_cvar_allocation(
+    db: AsyncIOMotorDatabase, risk_lambda: float, years: int = 5
+) -> CvarResponse:
+    """
+    Minimizes CVaR independently — no return target, no coupling to the
+    Markowitz recommendation. This was originally chained to Markowitz's
+    target return for "comparability," but that coupling left CVaR's LP
+    with almost no freedom to choose a different allocation (the return
+    constraint pinned it close to the Markowitz solution) — confirmed via
+    manual verification showing identical allocations across strategies.
+    CVaR now answers its own well-posed question (minimum tail risk),
+    the same way Markowitz answers its own (max risk-adjusted return);
+    the two are compared side by side in the UI, not coupled internally.
+
+    risk_lambda is still accepted on the request for interface symmetry
+    with /optimize (and in case a future phase wants it), but is unused
+    by this solve path.
+    """
+    aligned, excluded = await _get_aligned_stats(db, years)
+
+    if aligned.empty:
+        raise ValueError("No aligned return data available — cannot optimize")
+
+    mean_returns, cov_matrix = compute_annualized_stats(aligned)
+    scenario_matrix = to_scenario_matrix(aligned)
+    included_tickers = list(aligned.columns)
+
+    cvar_result, cvar_value = solve_min_cvar(scenario_matrix, mean_returns, cov_matrix)
+
+    return CvarResponse(
+        allocations=_to_allocations(included_tickers, cvar_result),
+        expected_return=cvar_result.expected_return,
+        expected_variance=cvar_result.expected_variance,
+        cvar=cvar_value,
+        confidence_level=CVAR_CONFIDENCE_LEVEL,
         excluded_tickers=excluded,
     )

@@ -62,3 +62,24 @@ class FrontierResponse(BaseModel):
     frontier: list[FrontierPoint]
     recommended: OptimizeResponse
     excluded_tickers: list[str]
+
+
+class CvarRequest(BaseModel):
+    """
+    Same shape as OptimizeRequest — risk_lambda is unused by CVaR's own
+    objective (CVaR has no lambda term) but is accepted for interface
+    symmetry with /optimize and to select a target-return point via
+    solve_cvar_target_return, keeping the two strategies comparable.
+    """
+
+    risk_lambda: float = Field(gt=0)
+    years: int = Field(default=5, gt=0)
+
+
+class CvarResponse(BaseModel):
+    allocations: list[AssetAllocation]
+    expected_return: float
+    expected_variance: float
+    cvar: float
+    confidence_level: float
+    excluded_tickers: list[str]
