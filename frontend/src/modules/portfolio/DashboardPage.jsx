@@ -3,6 +3,7 @@
 
 import { useAuth } from '../auth/authContext';
 import PriceChart from './PriceChart';
+import OptimizationPanel from './OptimizationPanel';
 
 const RISK_LABEL_DISPLAY = {
   conservative: 'Conservative',
@@ -64,6 +65,7 @@ export default function DashboardPage() {
         </div>
 
         <PriceChart />
+        <OptimizationPanel />
       </div>
     </div>
   );
